@@ -14,7 +14,9 @@ export const signup = async (req, res) => {
     const user = await User.create({ name, email, password });
     const token = generateToken(user._id);
 
-    res.status(201).json({ user: { name: user.name, email: user.email }, token });
+    res.status(201).json({ 
+       message: "signup successful",
+      user: { name: user.name, email: user.email }, token });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -30,7 +32,9 @@ export const login = async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     const token = generateToken(user._id);
-    res.status(200).json({ user: { name: user.name, email: user.email }, token });
+    res.status(200).json({ 
+      message: "Login successful",
+      user: { name: user.name, email: user.email }, token });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
