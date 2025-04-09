@@ -8,8 +8,8 @@
   "license": "ISC",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "test": "node --no-warnings ./node_modules/.bin/jest --runInBand"
-
+    "test": "node --no-warnings ./node_modules/.bin/jest --runInBand" ,
+    "start": "node index.js"
   },
   
   "devDependencies": {
