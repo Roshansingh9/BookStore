@@ -1,63 +1,63 @@
-// src/controllers/book.controller.js
 
+import { validationResult } from "express-validator";
 import { Book } from "../models/book.model.js";
 
-// Create Book
-export const createBook = async (req, res) => {
+export const createBook = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400);
+    return next(new Error(errors.array()[0].msg));
+  }
+
   try {
-    const { title, author, category, price, rating, publishedDate } = req.body;
-    const book = await Book.create({
-      title,
-      author,
-      category,
-      price,
-      rating,
-      publishedDate,
+    const newBook = new Book({
+      ...req.body,
       addedBy: req.user._id,
     });
-    res.status(201).json(book);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    const savedBook = await newBook.save();
+    res.status(201).json(savedBook);
+  } catch (error) {
+    next(error);
   }
 };
-
-// Get All Books
-// controllers/book.controller.js
 
 
 
 export const getAllBooks = async (req, res) => {
   try {
-    const { author, category, rating, title } = req.query;
+    const { author, category, rating, title, page = 1, limit = 10, sortBy = "createdAt", order = "desc" } = req.query;
 
     let query = {};
 
-    if (author) {
-      query.author = { $regex: author, $options: "i" }; // case-insensitive partial match
-    }
+    if (author) query.author = { $regex: author, $options: "i" };
+    if (category) query.category = { $regex: category, $options: "i" };
+    if (rating) query.rating = { $gte: Number(rating) };
+    if (title) query.title = { $regex: title, $options: "i" };
 
-    if (category) {
-      query.category = { $regex: category, $options: "i" };
-    }
+    const sortOptions = {};
+    if (sortBy) sortOptions[sortBy] = order === "asc" ? 1 : -1;
 
-    if (rating) {
-      query.rating = { $gte: Number(rating) }; // rating >= provided rating
-    }
+    const skip = (Number(page) - 1) * Number(limit);
 
-    if (title) {
-      query.title = { $regex: title, $options: "i" }; // partial search
-    }
+    const books = await Book.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(Number(limit))
+      .populate("addedBy", "name email");
 
-    const books = await Book.find(query).populate("addedBy", "name email");
+    const total = await Book.countDocuments(query);
 
-    res.status(200).json(books);
+    res.status(200).json({
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      books,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-
-// Get Book by ID
 export const getBookById = async (req, res) => {
   try {
     const book = await Book.findById(req.params.id).populate("addedBy", "name email");
@@ -68,7 +68,7 @@ export const getBookById = async (req, res) => {
   }
 };
 
-// Update Book
+
 export const updateBookById = async (req, res) => {
   try {
     const updatedBook = await Book.findByIdAndUpdate(req.params.id, req.body, {
@@ -82,7 +82,7 @@ export const updateBookById = async (req, res) => {
   }
 };
 
-// Delete Book
+
 export const deleteBookById = async (req, res) => {
   try {
     const deleted = await Book.findByIdAndDelete(req.params.id);

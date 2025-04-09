@@ -1,21 +1,44 @@
-// src/routes/book.routes.js
+
 
 import express from "express";
-import { protect } from "../middlewares/auth.middleware.js";
 import {
-  createBook,
   getAllBooks,
+  createBook,
   getBookById,
   updateBookById,
   deleteBookById,
 } from "../controllers/book.controller.js";
+import { protect } from "../middlewares/auth.middleware.js";
+import { validateBookQuery } from "../validators/book.validation.js";
+import { validateBook } from "../validators/book.validation.js";
+import { validationResult } from "express-validator";
 
 const router = express.Router();
 
-router.post("/create", protect, createBook);             // Create book
-router.get("/", getAllBooks);                      // Get all books
-router.get("/:id", getBookById);                   // Get book by ID
-router.put("/:id", protect, updateBookById);       // Update book by ID
-router.delete("/:id", protect, deleteBookById);    // Delete book by ID
+
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+};
+/**
+ * @swagger
+ * /books:
+ *   get:
+ *     summary: Get all books
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+
+router.get("/", validateBookQuery, handleValidationErrors, getAllBooks);
+
+
+router.post("/", protect, validateBook, handleValidationErrors, createBook);
+
+router.get("/:id", getBookById);
+router.put("/:id", updateBookById);
+router.delete("/:id", deleteBookById);
 
 export default router;
